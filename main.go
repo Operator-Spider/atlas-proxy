@@ -37,7 +37,8 @@ func requestHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if len(strings.SplitN(string(ctx.Request.Header.RequestURI())[1:], "/", 2)) < 2 {
+	requestPath := strings.Trim(string(ctx.Path()), "/")
+	if len(requestPath) == 0 {
 		ctx.SetStatusCode(400)
 		ctx.SetBody([]byte("URL format invalid."))
 		return
@@ -67,10 +68,26 @@ func makeRequest(ctx *fasthttp.RequestCtx, attempt int) *fasthttp.Response {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 	req.Header.SetMethod(string(ctx.Method()))
-	url := strings.SplitN(string(ctx.Request.Header.RequestURI())[1:], "/", 2)
-	req.SetRequestURI("https://" + url[0] + ".roblox.com/" + url[1])
+	requestPath := strings.Trim(string(ctx.Path()), "/")
+	parts := strings.SplitN(requestPath, "/", 2)
+
+	var targetURL string
+	if len(parts) == 1 {
+		targetURL = "https://www.roblox.com/" + parts[0]
+	} else {
+		targetURL = "https://" + parts[0] + ".roblox.com/" + parts[1]
+	}
+
+	if len(ctx.URI().QueryString()) > 0 {
+		targetURL += "?" + string(ctx.URI().QueryString())
+	}
+
+	req.SetRequestURI(targetURL)
 	req.SetBody(ctx.Request.Body())
 	ctx.Request.Header.VisitAll(func (key, value []byte) {
+		if strings.EqualFold(string(key), "Host") || strings.EqualFold(string(key), "PROXYKEY") {
+			return
+		}
 		req.Header.Set(string(key), string(value))
 	})
 	req.Header.Set("User-Agent", "RoProxy")
@@ -79,10 +96,10 @@ func makeRequest(ctx *fasthttp.RequestCtx, attempt int) *fasthttp.Response {
 
 	err := client.Do(req, resp)
 
-    if err != nil {
+	if err != nil {
 		fasthttp.ReleaseResponse(resp)
-        return makeRequest(ctx, attempt + 1)
-    } else {
+		return makeRequest(ctx, attempt + 1)
+	} else {
 		return resp
 	}
 }
