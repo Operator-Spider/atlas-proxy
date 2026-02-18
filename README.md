@@ -9,3 +9,6 @@ Setup is easy, simply deploy with the button below and configure environment var
 
 When "KEY" environment variable is populated, a matching "PROXYKEY" header must be present.
 Requests can be made as either `/subdomain/path` (e.g. https://games.roblox.com/docs -> https://roproxytest.heroku.com/games/docs) or `/path` (defaults to `www.roblox.com`, e.g. `/home` -> https://www.roblox.com/home).
+Users API shorthands are also supported:
+- `/users/<id>` -> `https://users.roblox.com/v1/users/<id>`
+- `/v1/users/<id>` -> `https://users.roblox.com/v1/users/<id>`

@@ -38,6 +38,15 @@ func getEnvString(key, fallback string) string {
 	return value
 }
 
+func isVersionSegment(segment string) bool {
+	if len(segment) < 2 || segment[0] != 'v' {
+		return false
+	}
+
+	_, err := strconv.Atoi(segment[1:])
+	return err == nil
+}
+
 func main() {
 	h := requestHandler
 	
@@ -92,13 +101,19 @@ func makeRequest(ctx *fasthttp.RequestCtx, attempt int) *fasthttp.Response {
 	defer fasthttp.ReleaseRequest(req)
 	req.Header.SetMethod(string(ctx.Method()))
 	requestPath := strings.Trim(string(ctx.Path()), "/")
-	parts := strings.SplitN(requestPath, "/", 2)
-
+	segments := strings.Split(requestPath, "/")
 	var targetURL string
-	if len(parts) == 1 {
-		targetURL = "https://www.roblox.com/" + parts[0]
+	if len(segments) == 2 && segments[0] == "users" && segments[1] != "" {
+		targetURL = "https://users.roblox.com/v1/users/" + segments[1]
+	} else if len(segments) >= 3 && isVersionSegment(segments[0]) && segments[1] == "users" {
+		targetURL = "https://users.roblox.com/" + requestPath
 	} else {
-		targetURL = "https://" + parts[0] + ".roblox.com/" + parts[1]
+		parts := strings.SplitN(requestPath, "/", 2)
+		if len(parts) == 1 {
+			targetURL = "https://www.roblox.com/" + parts[0]
+		} else {
+			targetURL = "https://" + parts[0] + ".roblox.com/" + parts[1]
+		}
 	}
 
 	if len(ctx.URI().QueryString()) > 0 {
