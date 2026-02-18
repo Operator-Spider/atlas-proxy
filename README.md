@@ -7,4 +7,5 @@ Setup is easy, simply deploy with the button below and configure environment var
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/fV9Lxm)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-When "KEY" environment variable is populated, a matching "PROXYKEY" header must be present. Requests must be made in the format /subdomain/path. E.g. https://games.roblox.com/docs -> https://roproxytest.heroku.com/games/docs
+When "KEY" environment variable is populated, a matching "PROXYKEY" header must be present.
+Requests can be made as either `/subdomain/path` (e.g. https://games.roblox.com/docs -> https://roproxytest.heroku.com/games/docs) or `/path` (defaults to `www.roblox.com`, e.g. `/home` -> https://www.roblox.com/home).

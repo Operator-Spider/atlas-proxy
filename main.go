@@ -1,19 +1,42 @@
 package main
 
 import (
-	"log"
-	"time"
-	"os"
 	"github.com/valyala/fasthttp"
+	"log"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-var timeout, _ = strconv.Atoi(os.Getenv("TIMEOUT"))
-var retries, _ = strconv.Atoi(os.Getenv("RETRIES"))
-var port = os.Getenv("PORT")
+var timeout = getPositiveEnvInt("TIMEOUT", 5)
+var retries = getPositiveEnvInt("RETRIES", 5)
+var port = getEnvString("PORT", "8080")
 
 var client *fasthttp.Client
+
+func getPositiveEnvInt(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 1 {
+		return fallback
+	}
+
+	return parsed
+}
+
+func getEnvString(key, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	return value
+}
 
 func main() {
 	h := requestHandler
@@ -23,7 +46,7 @@ func main() {
 		MaxIdleConnDuration: 60 * time.Second,
 	}
 
-	if err := fasthttp.ListenAndServe(":" + port, h); err != nil {
+	if err := fasthttp.ListenAndServe(":"+port, h); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }
@@ -97,6 +120,7 @@ func makeRequest(ctx *fasthttp.RequestCtx, attempt int) *fasthttp.Response {
 	err := client.Do(req, resp)
 
 	if err != nil {
+		log.Printf("Upstream request failed (attempt %d/%d) for %s: %v", attempt, retries, targetURL, err)
 		fasthttp.ReleaseResponse(resp)
 		return makeRequest(ctx, attempt + 1)
 	} else {
